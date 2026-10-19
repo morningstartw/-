@@ -62,20 +62,24 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     setShowAddForm(false);
   };
 
+  const [notice, setNotice] = useState<string | null>(null);
+
   const handleCopyList = () => {
     if (items.length === 0) return;
     const text = `🛒 智慧廚房採買清單：\n` +
       items.map((i) => `${i.isChecked ? '✓' : '□'} ${i.name} ${i.amount}${i.unit} [${i.category}]`).join('\n');
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
-      alert('採買清單已複製至剪貼簿！可貼到通訊軟體或備忘錄。');
+      setNotice('✓ 採買清單已複製至剪貼簿！可貼到通訊軟體或備忘錄。');
+      setTimeout(() => setNotice(null), 3000);
     }
   };
 
   const handleBatchImport = () => {
     const checkedItems = items.filter((i) => i.isChecked);
     if (checkedItems.length === 0) {
-      alert('請先勾選已購買的食材！');
+      setNotice('⚠️ 請先勾選已購買的食材再入庫！');
+      setTimeout(() => setNotice(null), 3000);
       return;
     }
     onImportToFridge(checkedItems);
@@ -107,6 +111,20 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
 
         {/* Content */}
         <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
+          {/* Notice Alert */}
+          {notice && (
+            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-800 dark:text-emerald-300 font-semibold text-xs flex items-center justify-between animate-in fade-in">
+              <span>{notice}</span>
+              <button
+                type="button"
+                onClick={() => setNotice(null)}
+                className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Action Toolbar */}
           <div className="flex items-center justify-between gap-2">
             <div className="text-slate-500 dark:text-slate-400 font-medium">

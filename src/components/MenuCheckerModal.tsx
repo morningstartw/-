@@ -99,6 +99,7 @@ export const MenuCheckerModal: React.FC<MenuCheckerModalProps> = ({
   const [addedAllMissing, setAddedAllMissing] = useState(false);
   const [addedOptimizedMissing, setAddedOptimizedMissing] = useState(false);
   const [expandedDishIndex, setExpandedDishIndex] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleRunCheck = async (menuTextToUse?: string) => {
     const text =
@@ -112,6 +113,7 @@ export const MenuCheckerModal: React.FC<MenuCheckerModalProps> = ({
 
     setIsLoading(true);
     setResult(null);
+    setErrorMessage(null);
     setAddedAllMissing(false);
     setAddedOptimizedMissing(false);
 
@@ -140,7 +142,7 @@ export const MenuCheckerModal: React.FC<MenuCheckerModalProps> = ({
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || '比對菜單時發生錯誤，請重試。');
+      setErrorMessage(err.message || '比對菜單時發生錯誤，請檢查網路連線或 API 金鑰設定後重試。');
     } finally {
       setIsLoading(false);
     }
@@ -343,6 +345,24 @@ export const MenuCheckerModal: React.FC<MenuCheckerModalProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Error Notice */}
+          {errorMessage && (
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start gap-2.5 text-rose-700 dark:text-rose-300 text-xs animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+              <div className="flex-1">
+                <span className="font-bold">比對發生問題：</span>
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Quick Preset Combos when no results yet */}
           {!result && !isLoading && (

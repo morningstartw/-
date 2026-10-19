@@ -153,7 +153,7 @@ export const RecognitionModal: React.FC<RecognitionModalProps> = ({
   const handleConfirmAndAdd = () => {
     const validItems = detectedItems.filter((i) => i.name.trim() && i.amount > 0);
     if (validItems.length === 0) {
-      alert('請至少保留一項有效食材！');
+      setErrorMsg('請至少保留一項有效食材！');
       return;
     }
     onConfirm(validItems);

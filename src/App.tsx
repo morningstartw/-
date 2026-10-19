@@ -299,7 +299,7 @@ export default function App() {
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || '生成失敗，請稍後重試。');
+      setToastMessage('⚠️ ' + (err.message || '生成失敗，請檢查網路連線或 API Key 後重試。'));
     } finally {
       setIsGeneratingRecipes(false);
     }
@@ -346,7 +346,7 @@ export default function App() {
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || '換菜失敗，請重試');
+      setToastMessage('⚠️ ' + (err.message || '換菜失敗，請重試。'));
     } finally {
       setIsSwappingRecipe(false);
     }
@@ -565,7 +565,7 @@ export default function App() {
       }
     } catch (err: any) {
       console.error(err);
-      alert(err.message || '生成失敗，請重試。');
+      setToastMessage('⚠️ ' + (err.message || '生成每週菜單失敗，請稍後重試。'));
     } finally {
       setIsGeneratingWeeklyPlan(false);
     }

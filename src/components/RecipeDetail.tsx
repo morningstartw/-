@@ -14,6 +14,7 @@ import {
   Share2,
   PackageCheck,
   ChefHat,
+  Check,
 } from 'lucide-react';
 import { Recipe, Ingredient } from '../types';
 
@@ -33,6 +34,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({
   onRequestSwap,
 }) => {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [copied, setCopied] = useState(false);
   // Step timers state: map stepNumber -> { remainingSeconds, isRunning }
   const [timers, setTimers] = useState<{
     [stepNumber: number]: { remaining: number; running: boolean; initial: number };
@@ -139,13 +141,21 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({
                 navigator.clipboard.writeText(
                   `🍽️ 今日料理：${recipe.title}\n耗時約 ${recipe.cookingTimeMinutes} 分鐘，利用冰箱食材做出的美味減廢食譜！`
                 );
-                alert('食譜文字已複製到剪貼簿！');
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
               }
             }}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs"
             title="分享食譜"
           >
-            <Share2 className="w-4 h-4" />
+            {copied ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-500" />
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">已複製</span>
+              </>
+            ) : (
+              <Share2 className="w-4 h-4" />
+            )}
           </button>
         </div>
       </div>

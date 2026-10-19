@@ -10,8 +10,19 @@ export const app = express();
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+const router = express.Router();
+
 // Health check endpoint for deployment monitoring
-app.get('/api/health', (_req: Request, res: Response) => {
+router.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'AI 智慧冰箱與食譜助理 API',
+    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+router.get('/', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'AI 智慧冰箱與食譜助理 API',
@@ -47,8 +58,62 @@ function parseImageData(dataUrlOrBase64: string): { mimeType: string; data: stri
   return { mimeType: 'image/jpeg', data: dataUrlOrBase64 };
 }
 
+// Robust generateContent helper with automatic fallback if primary model experiences high load (503/429)
+async function generateWithFallback(
+  ai: GoogleGenAI,
+  params: {
+    contents: any;
+    config?: any;
+    preferredModel?: string;
+  }
+) {
+  const primaryModel = params.preferredModel || 'gemini-3.8-flash';
+  const fallbackModel = 'gemini-flash-latest';
+
+  try {
+    return await ai.models.generateContent({
+      model: primaryModel,
+      contents: params.contents,
+      config: params.config,
+    });
+  } catch (err: any) {
+    const errMsg = err?.message || '';
+    if (
+      errMsg.includes('503') ||
+      errMsg.includes('high demand') ||
+      errMsg.includes('UNAVAILABLE') ||
+      errMsg.includes('429') ||
+      errMsg.includes('RESOURCE_EXHAUSTED')
+    ) {
+      console.warn(`Model ${primaryModel} busy/unavailable. Falling back to ${fallbackModel}...`);
+      return await ai.models.generateContent({
+        model: fallbackModel,
+        contents: params.contents,
+        config: params.config,
+      });
+    }
+    throw err;
+  }
+}
+
+// User-friendly error message cleaner
+function formatErrorMessage(error: any, defaultMessage: string): string {
+  if (!error) return defaultMessage;
+  const rawMsg = error.message || String(error);
+  if (rawMsg.includes('GEMINI_API_KEY') || rawMsg.includes('API key')) {
+    return '尚未設定或無效的 GEMINI_API_KEY，請確認環境變數。';
+  }
+  if (rawMsg.includes('503') || rawMsg.includes('high demand') || rawMsg.includes('UNAVAILABLE')) {
+    return '目前 AI 伺服器忙碌中，請稍候 5 秒後重試。';
+  }
+  if (rawMsg.includes('429') || rawMsg.includes('RESOURCE_EXHAUSTED')) {
+    return 'API 呼叫頻率已達上限，請稍後再試。';
+  }
+  return defaultMessage;
+}
+
 // 1. Recognize Ingredients from Photo (Snap-to-Inventory)
-app.post('/api/recognize-ingredients', async (req: Request, res: Response) => {
+router.post('/recognize-ingredients', async (req: Request, res: Response) => {
   try {
     const { image } = req.body;
     if (!image) {
@@ -75,8 +140,7 @@ app.post('/api/recognize-ingredients', async (req: Request, res: Response) => {
 5. 請務必輸出合法的 JSON 物件，嚴格符合指定 schema。
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithFallback(ai, {
       contents: [
         {
           role: 'user',
@@ -133,13 +197,13 @@ app.post('/api/recognize-ingredients', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error in recognize-ingredients:', error);
     return res.status(500).json({
-      error: error?.message || '辨識過程中發生錯誤，請稍後重試。',
+      error: formatErrorMessage(error, '辨識過程中發生錯誤，請稍後重試。'),
     });
   }
 });
 
 // 2. Generate Recipes (Single or Combo Meal)
-app.post('/api/generate-recipes', async (req: Request, res: Response) => {
+router.post('/generate-recipes', async (req: Request, res: Response) => {
   try {
     const {
       ingredients = [],
@@ -185,8 +249,7 @@ ${extraNotes ? `- 特殊需求或使用者備註：${extraNotes}` : ''}
 5. 請以合法的 JSON 格式輸出，符合 schema。
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithFallback(ai, {
       contents: [{ role: 'user', parts: [{ text: promptText }] }],
       config: {
         systemInstruction: '你是一位注重健康、效率與零浪費的專業廚神 AI，專門將現有冰箱剩食轉換成令人垂涎的美食。輸出繁體中文與嚴格 JSON。',
@@ -298,13 +361,13 @@ ${extraNotes ? `- 特殊需求或使用者備註：${extraNotes}` : ''}
   } catch (error: any) {
     console.error('Error generating recipes:', error);
     return res.status(500).json({
-      error: error?.message || '生成食譜時發生錯誤，請稍後重試。',
+      error: formatErrorMessage(error, '生成食譜時發生錯誤，請稍後重試。'),
     });
   }
 });
 
 // 3. Dynamic Recipe Swapping (動態換菜微調)
-app.post('/api/swap-recipe', async (req: Request, res: Response) => {
+router.post('/swap-recipe', async (req: Request, res: Response) => {
   try {
     const {
       oldRecipeTitle,
@@ -338,8 +401,7 @@ ${availableListStr}
 以合法 JSON 格式輸出符合 schema。
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithFallback(ai, {
       contents: [{ role: 'user', parts: [{ text: promptText }] }],
       config: {
         systemInstruction: '你是一位精準理解使用者換菜需求並即時調整食譜的廚房對話助理。輸出繁體中文與嚴格 JSON。',
@@ -436,13 +498,13 @@ ${availableListStr}
   } catch (error: any) {
     console.error('Error swapping recipe:', error);
     return res.status(500).json({
-      error: error?.message || '換菜失敗，請重試。',
+      error: formatErrorMessage(error, '換菜失敗，請重試。'),
     });
   }
 });
 
 // 4. Check Custom Menu Missing Ingredients & Provide AI Completion Plan
-app.post('/api/check-menu-ingredients', async (req: Request, res: Response) => {
+router.post('/check-menu-ingredients', async (req: Request, res: Response) => {
   try {
     const { desiredDish, customMenuText, customDishes = [], ingredients = [], preferences = {} } = req.body;
     const menuInput = (customMenuText || (customDishes.length > 0 ? customDishes.join('、') : desiredDish) || '').trim();
@@ -493,8 +555,7 @@ ${availableListStr || '目前無庫存食材'}
 請嚴格輸出合法 JSON，符合指定 schema。
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithFallback(ai, {
       contents: [{ role: 'user', parts: [{ text: promptText }] }],
       config: {
         systemInstruction: '你是一位精通食材庫存調度、食材替代與菜單設計的專業大廚。輸出繁體中文與嚴格 JSON 格式。',
@@ -645,9 +706,13 @@ ${availableListStr || '目前無庫存食材'}
   } catch (error: any) {
     console.error('Error checking menu ingredients:', error);
     return res.status(500).json({
-      error: error?.message || '比對菜單食材時發生錯誤，請稍後重試。',
+      error: formatErrorMessage(error, '比對菜單食材時發生錯誤，請稍後重試。'),
     });
   }
 });
+
+// Mount router on both /api and root / for seamless local dev & Vercel serverless routing
+app.use('/api', router);
+app.use('/', router);
 
 export default app;

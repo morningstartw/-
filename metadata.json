@@ -1,0 +1,6 @@
+{
+  "name": "AI 智慧冰箱與食譜助理",
+  "description": "透過多模態 AI 照片辨識盤點冰箱食材，依個人化設備與飲食偏好生成零浪費食譜，並支援動態換菜與自動庫存扣除。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -9,6 +9,7 @@ import {
   ChefHat,
   Moon,
   Sun,
+  Rocket,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -22,6 +23,7 @@ interface NavbarProps {
   onToggleDarkMode: () => void;
   onOpenShoppingList: () => void;
   onOpenMenuChecker: () => void;
+  onOpenVercelDeploy: () => void;
   onOpenSettings: () => void;
   onResetData: () => void;
 }
@@ -37,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleDarkMode,
   onOpenShoppingList,
   onOpenMenuChecker,
+  onOpenVercelDeploy,
   onOpenSettings,
   onResetData,
 }) => {
@@ -122,6 +125,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Action Icons */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Vercel Cloud Deploy Button */}
+          <button
+            onClick={onOpenVercelDeploy}
+            className="px-2.5 py-1.5 bg-black dark:bg-white text-white dark:text-slate-950 hover:opacity-90 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95"
+            title="Vercel 雲端部署教學與狀態"
+          >
+            <Rocket className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
+            <span className="hidden lg:inline">Vercel 部署</span>
+          </button>
+
           {/* Menu Checker Button */}
           <button
             onClick={onOpenMenuChecker}

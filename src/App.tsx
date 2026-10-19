@@ -12,6 +12,7 @@ import { ActionToast } from './components/ActionToast';
 import { WeeklyPlanner } from './components/WeeklyPlanner';
 import { ShoppingListModal } from './components/ShoppingListModal';
 import { MenuCheckerModal } from './components/MenuCheckerModal';
+import { VercelDeployModal } from './components/VercelDeployModal';
 import {
   Ingredient,
   Recipe,
@@ -98,6 +99,7 @@ export default function App() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [showShoppingListModal, setShowShoppingListModal] = useState(false);
   const [showMenuChecker, setShowMenuChecker] = useState(false);
+  const [showVercelModal, setShowVercelModal] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [recipeToSwap, setRecipeToSwap] = useState<Recipe | null>(null);
 
@@ -661,6 +663,7 @@ export default function App() {
         onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
         onOpenShoppingList={() => setShowShoppingListModal(true)}
         onOpenMenuChecker={() => setShowMenuChecker(true)}
+        onOpenVercelDeploy={() => setShowVercelModal(true)}
         onOpenSettings={() => setShowPreferences(true)}
         onResetData={handleResetData}
       />
@@ -799,6 +802,11 @@ export default function App() {
           onAddMissingToShoppingList={handleAddMissingToShoppingList}
           onClose={() => setShowMenuChecker(false)}
         />
+      )}
+
+      {/* Modal: Vercel Cloud Deployment Guide */}
+      {showVercelModal && (
+        <VercelDeployModal onClose={() => setShowVercelModal(false)} />
       )}
 
       {/* Modal: Dynamic Swap Recipe */}
